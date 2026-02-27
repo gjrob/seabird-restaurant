@@ -28,5 +28,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to save reservation' }, { status: 500 })
   }
 
+  try {
+    const { createClient: createCrmClient } = await import('@supabase/supabase-js')
+    const crm = createCrmClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { data: existing } = await crm
+      .from('customers')
+      .select('id, visit_count')
+      .eq('client_slug', 'seabird')
+      .eq('phone', phone)
+      .single()
+
+    if (existing) {
+      await crm
+        .from('customers')
+        .update({
+          visit_count: existing.visit_count + 1,
+          last_seen: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+    } else {
+      await crm
+        .from('customers')
+        .insert({ client_slug: 'seabird', name, phone, email, visit_count: 1 })
+    }
+  } catch (e) {
+    console.error('CRM upsert failed:', e)
+  }
+
   return NextResponse.json({ success: true, id: data.id })
 }

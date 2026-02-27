@@ -42,6 +42,25 @@ You are warm, coastal, and knowledgeable — like a trusted server who knows eve
 export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
+
+    // Fire-and-forget: log chat touchpoint (edge-safe direct fetch)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (supabaseUrl && serviceKey) {
+      const firstMsg = (messages as { role: string; content: string }[])
+        .find(m => m.role === 'user')?.content ?? '';
+      fetch(`${supabaseUrl}/rest/v1/customer_touchpoints`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ client_slug: 'seabird', type: 'chat', message: firstMsg.substring(0, 200) }),
+      }).catch(() => {});
+    }
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return new Response('Chat is not configured yet. Please call us at (910) 769-5996!', {

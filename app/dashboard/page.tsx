@@ -94,6 +94,20 @@ export default async function SeabirdDashboard() {
           ))}
         </div>
 
+        {/* CUSTOMER BOOK LINK */}
+        <div style={{ marginBottom: '2.5rem' }}>
+          <a href="/dashboard/customers" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0d1e30', border: '1px solid rgba(125,211,212,0.15)', borderRadius: '10px', padding: '1.25rem 1.5rem', textDecoration: 'none' }}>
+            <div>
+              <div style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8faab0', marginBottom: '0.4rem' }}>
+                CRM
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 600, color: '#e2f0f0' }}>Customer Book</div>
+              <div style={{ fontSize: '0.72rem', color: '#8faab0', marginTop: '3px' }}>Guests, notes, visit history</div>
+            </div>
+            <div style={{ fontSize: '1.5rem', color: '#7dd3d4' }}>→</div>
+          </a>
+        </div>
+
         {/* PENDING RESERVATIONS */}
         <div>
           <h2 style={{ fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8faab0', marginBottom: '1rem', fontWeight: 600 }}>
