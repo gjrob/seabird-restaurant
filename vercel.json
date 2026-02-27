@@ -1,0 +1,6 @@
+{
+  "name": "seabird-restaurant",
+  "env": {
+    "NEXT_PUBLIC_CLIENT_SLUG": "seabird"
+  }
+}
