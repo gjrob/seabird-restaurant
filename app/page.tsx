@@ -64,7 +64,7 @@ function SeabirdInner() {
     navPantry:      lang === 'en' ? 'The Pantry'      : 'La Despensa',
     navReserve:     lang === 'en' ? 'Reservations'    : 'Reservaciones',
     tagline:        lang === 'en' ? 'Celebrating the coast of North Carolina' : 'Celebrando la costa de Carolina del Norte',
-    ctaReserve:     lang === 'en' ? 'Reserve via OpenTable' : 'Reservar en OpenTable',
+    ctaReserve:     lang === 'en' ? 'Reserve a Table' : 'Reservar una Mesa',
     ctaMenu:        lang === 'en' ? 'View Menu'       : 'Ver Menú',
     ctaLive:        lang === 'en' ? 'Watch Live'      : 'Ver En Vivo',
     streamHeading:  lang === 'en' ? 'Live from Seabird' : 'En Vivo desde Seabird',
@@ -132,9 +132,9 @@ function SeabirdInner() {
             <SpecialsBanner clientSlug="seabird" accentColor="#7dd3d4" />
           </div>
           <div className="hero-ctas">
-            <a href="https://www.opentable.com" target="_blank" rel="noopener" className="btn-primary">
+            <button onClick={() => setShowReservation(true)} className="btn-primary" style={{ cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', border: 'none' }}>
               {t.ctaReserve}
-            </a>
+            </button>
             <a href="#content" className="btn-secondary">{t.ctaMenu}</a>
             <a href="#stream" className="btn-secondary">{t.ctaLive}</a>
           </div>

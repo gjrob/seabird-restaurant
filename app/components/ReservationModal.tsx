@@ -7,8 +7,6 @@ interface Props {
 }
 
 const TIME_SLOTS = [
-  '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
-  '1:00 PM',  '1:30 PM',  '2:00 PM',  '2:30 PM',
   '5:00 PM',  '5:30 PM',  '6:00 PM',  '6:30 PM',
   '7:00 PM',  '7:30 PM',  '8:00 PM',  '8:30 PM',
   '9:00 PM'
@@ -45,12 +43,21 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
     width: '100%',
     padding: '10px 14px',
     background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(232,160,176,0.2)',
+    border: '1px solid rgba(125,211,212,0.2)',
     borderRadius: '8px',
-    color: '#f5ede8',
+    color: '#e8f4f4',
     fontSize: '0.9rem',
     outline: 'none',
     transition: 'border-color 0.2s',
+  }
+
+  const labelStyle = {
+    display: 'block' as const,
+    color: '#7dd3d4',
+    fontSize: '0.75rem',
+    marginBottom: '6px',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
   }
 
   return (
@@ -60,7 +67,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0, zIndex: 50,
-          background: 'rgba(13,10,14,0.85)',
+          background: 'rgba(6,14,26,0.88)',
           backdropFilter: 'blur(6px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '16px',
@@ -70,8 +77,8 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
         <div
           onClick={e => e.stopPropagation()}
           style={{
-            background: 'linear-gradient(145deg, #1a1118, #211520)',
-            border: '1px solid rgba(232,160,176,0.2)',
+            background: 'linear-gradient(145deg, #0d1e30, #0a1620)',
+            border: '1px solid rgba(125,211,212,0.15)',
             borderRadius: '16px',
             padding: '32px',
             width: '100%',
@@ -79,7 +86,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
             maxHeight: '90vh',
             overflowY: 'auto',
             position: 'relative',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(200,96,122,0.08)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(125,211,212,0.06)',
           }}
         >
           {/* Close button */}
@@ -88,45 +95,45 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
             style={{
               position: 'absolute', top: '16px', right: '16px',
               background: 'none', border: 'none',
-              color: '#b8929a', fontSize: '1.3rem',
+              color: '#8faab0', fontSize: '1.3rem',
               cursor: 'pointer', lineHeight: 1,
             }}
           >✕</button>
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <div style={{ fontSize: '1.4rem', marginBottom: '4px', opacity: 0.3, color: '#e8a0b0' }}>
-              桜
+            <div style={{ fontSize: '1.6rem', marginBottom: '4px' }}>
+              🦪
             </div>
-            <h2 style={{ color: '#f5ede8', fontSize: '1.4rem', fontWeight: 600, margin: 0 }}>
-              Reserve a Table
+            <h2 style={{ color: '#e8f4f4', fontSize: '1.4rem', fontWeight: 600, margin: 0 }}>
+              Reserve at Seabird
             </h2>
-            <p style={{ color: '#b8929a', fontSize: '0.82rem', marginTop: '6px' }}>
-              Mon–Sat · 11am–9:30pm · (910) 332-3302
+            <p style={{ color: '#8faab0', fontSize: '0.82rem', marginTop: '6px' }}>
+              We'll confirm your reservation by phone · (910) 769-5996
             </p>
           </div>
 
           {status === 'success' ? (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>🌸</div>
-              <h3 style={{ color: '#e8a0b0', fontSize: '1.2rem', marginBottom: '8px' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>🦪</div>
+              <h3 style={{ color: '#7dd3d4', fontSize: '1.2rem', marginBottom: '8px' }}>
                 Request Received
               </h3>
-              <p style={{ color: '#b8929a', fontSize: '0.85rem', lineHeight: 1.6 }}>
-                We'll confirm your reservation by phone shortly.<br />
-                Thank you for choosing Kyoto.
+              <p style={{ color: '#8faab0', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                Thank you! We'll call to confirm your reservation.
               </p>
               <button
                 onClick={onClose}
                 style={{
                   marginTop: '24px',
                   padding: '10px 28px',
-                  background: '#c8607a',
+                  background: '#7dd3d4',
                   border: 'none',
                   borderRadius: '8px',
-                  color: 'white',
+                  color: '#060e1a',
                   cursor: 'pointer',
                   fontSize: '0.9rem',
+                  fontWeight: 600,
                 }}
               >
                 Close
@@ -136,9 +143,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
             <form onSubmit={handleSubmit}>
               {/* Name */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', color: '#e8a0b0', fontSize: '0.75rem', marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Name *
-                </label>
+                <label style={labelStyle}>Name *</label>
                 <input
                   required
                   style={inputStyle}
@@ -151,9 +156,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
               {/* Phone + Email row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', color: '#e8a0b0', fontSize: '0.75rem', marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    Phone *
-                  </label>
+                  <label style={labelStyle}>Phone *</label>
                   <input
                     required
                     type="tel"
@@ -164,9 +167,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: '#e8a0b0', fontSize: '0.75rem', marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    Email
-                  </label>
+                  <label style={labelStyle}>Email</label>
                   <input
                     type="email"
                     style={inputStyle}
@@ -180,9 +181,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
               {/* Party size + Date row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', color: '#e8a0b0', fontSize: '0.75rem', marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    Party Size *
-                  </label>
+                  <label style={labelStyle}>Party Size *</label>
                   <select
                     required
                     style={{ ...inputStyle, cursor: 'pointer' }}
@@ -190,17 +189,15 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
                     onChange={e => setForm(f => ({ ...f, party_size: e.target.value }))}
                   >
                     {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                      <option key={n} value={n} style={{ background: '#1a1118' }}>
+                      <option key={n} value={n} style={{ background: '#0d1e30' }}>
                         {n} {n === 1 ? 'guest' : 'guests'}
                       </option>
                     ))}
-                    <option value="10+" style={{ background: '#1a1118' }}>10+ guests</option>
+                    <option value="10+" style={{ background: '#0d1e30' }}>10+ guests</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: '#e8a0b0', fontSize: '0.75rem', marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    Date *
-                  </label>
+                  <label style={labelStyle}>Date *</label>
                   <input
                     required
                     type="date"
@@ -214,9 +211,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
 
               {/* Time slots */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', color: '#e8a0b0', fontSize: '0.75rem', marginBottom: '8px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Time *
-                </label>
+                <label style={{ ...labelStyle, marginBottom: '8px' }}>Time *</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {TIME_SLOTS.map(slot => (
                     <button
@@ -229,11 +224,12 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
                         fontSize: '0.8rem',
                         cursor: 'pointer',
                         transition: 'all 0.15s',
-                        background: form.time === slot ? '#c8607a' : 'rgba(255,255,255,0.04)',
+                        background: form.time === slot ? '#7dd3d4' : 'rgba(255,255,255,0.04)',
                         border: form.time === slot
-                          ? '1px solid #c8607a'
-                          : '1px solid rgba(232,160,176,0.2)',
-                        color: form.time === slot ? 'white' : '#b8929a',
+                          ? '1px solid #7dd3d4'
+                          : '1px solid rgba(125,211,212,0.2)',
+                        color: form.time === slot ? '#060e1a' : '#8faab0',
+                        fontWeight: form.time === slot ? 600 : 400,
                       }}
                     >
                       {slot}
@@ -244,9 +240,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
 
               {/* Notes */}
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', color: '#e8a0b0', fontSize: '0.75rem', marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Special Requests
-                </label>
+                <label style={labelStyle}>Special Requests</label>
                 <textarea
                   rows={2}
                   style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
@@ -258,7 +252,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
 
               {status === 'error' && (
                 <p style={{ color: '#f87171', fontSize: '0.82rem', marginBottom: '12px', textAlign: 'center' }}>
-                  Something went wrong. Please call us at (910) 332-3302.
+                  Something went wrong. Please call us at (910) 769-5996.
                 </p>
               )}
 
@@ -268,12 +262,12 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
                 style={{
                   width: '100%',
                   padding: '13px',
-                  background: status === 'loading' ? '#8a4055' : '#c8607a',
+                  background: status === 'loading' ? '#5aabac' : '#7dd3d4',
                   border: 'none',
                   borderRadius: '10px',
-                  color: 'white',
+                  color: '#060e1a',
                   fontSize: '0.95rem',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: status === 'loading' ? 'not-allowed' : 'pointer',
                   transition: 'background 0.2s',
                   letterSpacing: '0.03em',
@@ -282,7 +276,7 @@ export default function ReservationModal({ isOpen, onClose }: Props) {
                 {status === 'loading' ? 'Sending...' : 'Request Reservation'}
               </button>
 
-              <p style={{ textAlign: 'center', color: '#b8929a', fontSize: '0.72rem', marginTop: '12px' }}>
+              <p style={{ textAlign: 'center', color: '#8faab0', fontSize: '0.72rem', marginTop: '12px' }}>
                 We'll confirm by phone within a few hours.
               </p>
             </form>

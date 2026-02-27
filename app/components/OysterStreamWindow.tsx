@@ -56,16 +56,21 @@ export default function OysterStreamWindow({ clientSlug }: { clientSlug: string 
 
   if (phase === 'closed') {
     return (
-      <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 24px', gap: '24px' }}>
-        <OysterShellClosed />
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ color: '#8faab0', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Live from Seabird
-          </p>
-          <p style={{ color: '#e8f4f4', fontSize: '1rem', fontFamily: 'Georgia, serif', fontStyle: 'italic', marginTop: '6px', opacity: 0.55 }}>
-            The pearl opens when the kitchen does
-          </p>
-        </div>
+      <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px', cursor: 'default' }}>
+        <img
+          src="/oyster.jpg"
+          alt="Seabird oyster"
+          style={{
+            maxWidth: '320px',
+            width: '100%',
+            borderRadius: '12px',
+            boxShadow: '0 8px 40px rgba(0,180,180,0.3)',
+            display: 'block',
+          }}
+        />
+        <p style={{ color: '#7dd3d4', marginTop: '16px', fontStyle: 'italic', textAlign: 'center', fontSize: '0.95rem', opacity: 0.85 }}>
+          The pearl opens when the kitchen does
+        </p>
       </section>
     )
   }
@@ -107,42 +112,59 @@ export default function OysterStreamWindow({ clientSlug }: { clientSlug: string 
   }
 
   return (
-    <section style={{ animation: 'fadeIn 0.5s ease' }}>
+    <section style={{ animation: 'fadeIn 0.5s ease', padding: '0 0 40px' }}>
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 20px',
-        background: 'rgba(125,211,212,0.05)',
-        borderBottom: '1px solid rgba(125,211,212,0.1)',
+        maxWidth: '800px',
+        margin: '0 auto',
+        padding: '0 20px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{
-            width: '7px', height: '7px', borderRadius: '50%',
-            background: '#4ade80',
-            display: 'inline-block',
-            animation: 'pulse-green 2s infinite',
-          }} />
-          <span style={{ color: '#4ade80', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em' }}>
-            LIVE FROM SEABIRD
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#8faab0', fontSize: '0.7rem' }}>
-          <span>🦪</span>
-          <span>1 S. Front St · Wilmington</span>
-        </div>
-      </div>
-      <div style={{ width: '100%', aspectRatio: '16/9', background: '#060e1a', position: 'relative' }}>
-        {streamUrl ? (
-          <iframe
-            src={streamUrl}
-            style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-            allow="autoplay; fullscreen"
-            allowFullScreen
-          />
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8faab0', fontSize: '0.85rem' }}>
-            Connecting to stream...
+        {/* Live bar */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'rgba(125,211,212,0.05)',
+          border: '1px solid rgba(125,211,212,0.1)',
+          borderBottom: 'none',
+          borderRadius: '12px 12px 0 0',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              width: '7px', height: '7px', borderRadius: '50%',
+              background: '#4ade80',
+              display: 'inline-block',
+              animation: 'pulse-green 2s infinite',
+            }} />
+            <span style={{ color: '#4ade80', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em' }}>
+              LIVE FROM SEABIRD
+            </span>
           </div>
-        )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#8faab0', fontSize: '0.7rem' }}>
+            <span>🦪</span>
+            <span>1 S. Front St · Wilmington</span>
+          </div>
+        </div>
+        {/* 16:9 iframe */}
+        <div style={{
+          position: 'relative',
+          paddingBottom: '56.25%',
+          height: 0,
+          overflow: 'hidden',
+          borderRadius: '0 0 12px 12px',
+          background: '#060e1a',
+        }}>
+          {streamUrl ? (
+            <iframe
+              src={streamUrl}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+              allow="autoplay; fullscreen"
+              allowFullScreen
+            />
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8faab0', fontSize: '0.85rem' }}>
+              Connecting to stream...
+            </div>
+          )}
+        </div>
       </div>
     </section>
   )
