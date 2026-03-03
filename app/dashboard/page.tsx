@@ -1,161 +1,160 @@
+'use client'
+import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
-export const dynamic = 'force-dynamic'
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getStats(supabase: any, clientSlug: string) {
-  const now = new Date()
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+const LEADS_TABLE = 'seabird_reservations'
+const ACCENT = '#0d9488'
+const ACCENT_TEXT = '#ffffff'
 
-  const [pvWeek, pvMonth, chatWeek, resWeek, pending] = await Promise.all([
-    supabase
-      .from('canonical_events').select('*', { count: 'exact', head: true })
-      .eq('client_slug', clientSlug).eq('event_type', 'page.view').gte('occurred_at', weekAgo),
-    supabase
-      .from('canonical_events').select('*', { count: 'exact', head: true })
-      .eq('client_slug', clientSlug).eq('event_type', 'page.view').gte('occurred_at', monthAgo),
-    supabase
-      .from('canonical_events').select('*', { count: 'exact', head: true })
-      .eq('client_slug', clientSlug).eq('event_type', 'chat.message').gte('occurred_at', weekAgo),
-    supabase
-      .from('reservations').select('*', { count: 'exact', head: true })
-      .eq('client_slug', clientSlug).gte('created_at', weekAgo),
-    supabase
-      .from('reservations').select('*')
-      .eq('client_slug', clientSlug).eq('status', 'pending')
-      .order('created_at', { ascending: false }).limit(10),
-  ])
-
-  return {
-    pageViewsWeek: pvWeek.count ?? 0,
-    pageViewsMonth: pvMonth.count ?? 0,
-    chatWeek: chatWeek.count ?? 0,
-    reservationsWeek: resWeek.count ?? 0,
-    pendingReservations: pending.data ?? [],
-  }
+interface Lead {
+  id: string
+  name: string
+  phone?: string
+  party_size?: number
+  date?: string
+  status: string
+  created_at: string
 }
 
-export default async function SeabirdDashboard() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+export default function Dashboard() {
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [stats, setStats] = useState({ today: 0, week: 0, total: 0 })
+  const [loading, setLoading] = useState(true)
+  const [overlayActive, setOverlayActive] = useState(false)
+  const [overlayMsg, setOverlayMsg] = useState('')
 
-  if (!url || !key || url.includes('placeholder')) {
-    return (
-      <main style={{ background: '#060e1a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif' }}>
-        <div style={{ color: '#8faab0', textAlign: 'center' }}>
-          <p>Dashboard not configured.</p>
-          <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Set SUPABASE_SERVICE_ROLE_KEY in .env.local</p>
-        </div>
-      </main>
-    )
+  useEffect(() => {
+    fetchLeads()
+    const sub = supabase.channel('seabird-reservations')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: LEADS_TABLE },
+        (payload) => {
+          setLeads(prev => [payload.new as Lead, ...prev])
+          setStats(prev => ({ ...prev, today: prev.today + 1, total: prev.total + 1 }))
+        })
+      .subscribe()
+    return () => { supabase.removeChannel(sub) }
+  }, [])
+
+  async function fetchLeads() {
+    const { data } = await supabase.from(LEADS_TABLE).select('*').order('created_at', { ascending: false }).limit(200)
+    if (data) {
+      setLeads(data)
+      const now = new Date()
+      const todayStr = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+      const weekStr = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).toISOString()
+      setStats({
+        today: data.filter(l => l.created_at > todayStr).length,
+        week: data.filter(l => l.created_at > weekStr).length,
+        total: data.length,
+      })
+    }
+    setLoading(false)
   }
 
-  const supabase = createClient(url, key)
-  const stats = await getStats(supabase, 'seabird')
+  async function updateStatus(id: string, status: string) {
+    await supabase.from(LEADS_TABLE).update({ status }).eq('id', id)
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l))
+  }
 
-  const statCards = [
-    { label: 'Page Views', sub: 'This Week', value: stats.pageViewsWeek, accent: '#7dd3d4' },
-    { label: 'Page Views', sub: 'This Month', value: stats.pageViewsMonth, accent: '#7dd3d4' },
-    { label: 'Chatbot Conversations', sub: 'This Week', value: stats.chatWeek, accent: '#4ade80' },
-    { label: 'Reservation Requests', sub: 'This Week', value: stats.reservationsWeek, accent: '#f59e0b' },
-  ]
+  function exportCSV() {
+    if (!leads.length) return
+    const headers = Object.keys(leads[0]).join(',')
+    const rows = leads.map(l => Object.values(l).map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([headers + '\n' + rows], { type: 'text/csv' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
+    a.download = `seabird-reservations-${new Date().toISOString().split('T')[0]}.csv`; a.click()
+  }
+
+  const statusColor = (s: string) => (
+    ({ pending: '#ffaa00', confirmed: '#39ff14', completed: '#00d4ff', cancelled: '#ff4444' } as Record<string, string>)[s] || '#666'
+  )
 
   return (
-    <main style={{ background: '#060e1a', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", color: '#e2f0f0', padding: '0 0 4rem' }}>
-      {/* HEADER */}
-      <header style={{ borderBottom: '1px solid rgba(125,211,212,0.1)', padding: '1.5rem 2rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+    <div style={{ minHeight: '100vh', background: '#080b0f', color: '#f0f4f8', fontFamily: 'monospace' }}>
+      {/* Header */}
+      <div style={{ borderBottom: `2px solid ${ACCENT}`, padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#e2f0f0', margin: 0 }}>
-            Seabird Restaurant · Owner Dashboard
-          </h1>
-          <p style={{ fontSize: '0.72rem', color: '#8faab0', marginTop: '4px', letterSpacing: '0.05em' }}>
-            Updated in real time · Powered by BlueTubeTV
-          </p>
+          <div style={{ fontSize: '10px', color: ACCENT, letterSpacing: '.15em' }}>// DASHBOARD</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '.05em' }}>SEABIRD RESTAURANT</div>
         </div>
-        <div style={{ fontSize: '0.7rem', color: '#8faab0', textAlign: 'right' }}>
-          <div>1 S. Front St · Wilmington, NC</div>
-          <div style={{ marginTop: '2px' }}>(910) 769-5996</div>
-        </div>
-      </header>
-
-      <div style={{ padding: '2rem' }}>
-        {/* STAT CARDS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
-          {statCards.map((card, i) => (
-            <div key={i} style={{ background: '#0d1e30', border: '1px solid rgba(125,211,212,0.1)', borderRadius: '10px', padding: '1.25rem 1.5rem' }}>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8faab0', marginBottom: '0.5rem' }}>
-                {card.label}<br/><span style={{ color: card.accent, fontSize: '0.6rem' }}>{card.sub}</span>
-              </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 700, color: card.accent, lineHeight: 1 }}>
-                {card.value.toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* CUSTOMER BOOK LINK */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <a href="/dashboard/customers" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0d1e30', border: '1px solid rgba(125,211,212,0.15)', borderRadius: '10px', padding: '1.25rem 1.5rem', textDecoration: 'none' }}>
-            <div>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8faab0', marginBottom: '0.4rem' }}>
-                CRM
-              </div>
-              <div style={{ fontSize: '1rem', fontWeight: 600, color: '#e2f0f0' }}>Customer Book</div>
-              <div style={{ fontSize: '0.72rem', color: '#8faab0', marginTop: '3px' }}>Guests, notes, visit history</div>
-            </div>
-            <div style={{ fontSize: '1.5rem', color: '#7dd3d4' }}>→</div>
-          </a>
-        </div>
-
-        {/* PENDING RESERVATIONS */}
-        <div>
-          <h2 style={{ fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8faab0', marginBottom: '1rem', fontWeight: 600 }}>
-            Pending Reservations
-          </h2>
-          {stats.pendingReservations.length === 0 ? (
-            <div style={{ background: '#0d1e30', border: '1px solid rgba(125,211,212,0.1)', borderRadius: '10px', padding: '2rem', textAlign: 'center', color: '#8faab0', fontSize: '0.85rem' }}>
-              No pending reservations
-            </div>
-          ) : (
-            <div style={{ background: '#0d1e30', border: '1px solid rgba(125,211,212,0.1)', borderRadius: '10px', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(125,211,212,0.1)' }}>
-                    {['Name', 'Party', 'Date', 'Time', 'Phone', 'Notes', 'Status'].map(h => (
-                      <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', color: '#8faab0', fontWeight: 600, fontSize: '0.65rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.pendingReservations.map((r: any) => (
-                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(125,211,212,0.06)' }}>
-                      <td style={{ padding: '0.75rem 1rem', color: '#e2f0f0' }}>{r.name}</td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#7dd3d4', textAlign: 'center' }}>{r.party_size}</td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#e2f0f0' }}>{r.date}</td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#e2f0f0' }}>{r.time}</td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#8faab0' }}>{r.phone}</td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#8faab0', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.notes || '—'}</td>
-                      <td style={{ padding: '0.75rem 1rem' }}>
-                        <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.06em', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}>
-                          PENDING
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <button onClick={exportCSV} style={{ background: 'transparent', border: `1px solid ${ACCENT}`, color: ACCENT, padding: '8px 20px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '11px', letterSpacing: '.1em' }}>
+          EXPORT CSV
+        </button>
       </div>
 
-      {/* FOOTER */}
-      <footer style={{ textAlign: 'center', padding: '1.5rem', borderTop: '1px solid rgba(125,211,212,0.08)', marginTop: '3rem' }}>
-        <p style={{ color: '#8faab0', fontSize: '0.7rem', letterSpacing: '0.08em' }}>
-          BlueTubeTV · Blue Ring Holdings LLC
-        </p>
-      </footer>
-    </main>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1px', background: '#1a2332' }}>
+        {[{ label: 'TODAY', value: stats.today }, { label: 'THIS WEEK', value: stats.week }, { label: 'ALL TIME', value: stats.total }].map(s => (
+          <div key={s.label} style={{ background: '#080b0f', padding: '28px 32px' }}>
+            <div style={{ fontSize: '10px', color: '#6b7a8d', letterSpacing: '.1em', marginBottom: '8px' }}>{s.label}</div>
+            <div style={{ fontSize: '56px', fontWeight: 700, color: ACCENT, lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: '10px', color: '#6b7a8d', marginTop: '4px' }}>RESERVATIONS</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Overlay Control */}
+      <div style={{ margin: '24px 32px', border: '1px solid #1a2332', padding: '20px' }}>
+        <div style={{ fontSize: '10px', color: ACCENT, letterSpacing: '.15em', marginBottom: '12px' }}>// OVERLAY CONTROL</div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <input
+            value={overlayMsg}
+            onChange={e => setOverlayMsg(e.target.value)}
+            placeholder="e.g. Oyster happy hour 5-7pm — walk-ins welcome"
+            style={{ flex: 1, background: '#0f1419', border: '1px solid #1a2332', color: '#f0f4f8', padding: '10px 16px', fontFamily: 'monospace', fontSize: '13px', outline: 'none' }}
+          />
+          <button
+            onClick={() => setOverlayActive(!overlayActive)}
+            style={{ background: overlayActive ? '#ff4444' : ACCENT, color: ACCENT_TEXT, border: 'none', padding: '10px 28px', cursor: 'pointer', fontFamily: 'monospace', fontWeight: 700, fontSize: '12px', letterSpacing: '.1em' }}
+          >
+            {overlayActive ? 'STOP' : 'GO LIVE'}
+          </button>
+        </div>
+        {overlayActive && (
+          <div style={{ marginTop: '12px', padding: '10px 16px', background: 'rgba(13,148,136,.06)', border: `1px solid ${ACCENT}`, fontSize: '12px', color: ACCENT }}>
+            ● LIVE — &quot;{overlayMsg || 'No message set'}&quot;
+          </div>
+        )}
+      </div>
+
+      {/* Table */}
+      <div style={{ margin: '0 32px 48px' }}>
+        <div style={{ fontSize: '10px', color: ACCENT, letterSpacing: '.15em', marginBottom: '12px' }}>// RESERVATIONS — REAL TIME</div>
+        {loading ? (
+          <div style={{ color: '#6b7a8d', padding: '48px', textAlign: 'center' }}>LOADING...</div>
+        ) : leads.length === 0 ? (
+          <div style={{ color: '#6b7a8d', padding: '48px', textAlign: 'center', border: '1px solid #1a2332' }}>NO RESERVATIONS YET</div>
+        ) : (
+          <div style={{ border: '1px solid #1a2332' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 0.75fr 1fr 1fr', padding: '10px 16px', background: '#0f1419', fontSize: '10px', color: '#6b7a8d', letterSpacing: '.1em', borderBottom: '1px solid #1a2332' }}>
+              <span>NAME</span><span>PHONE</span><span>PARTY SIZE</span><span>DATE</span><span>STATUS</span>
+            </div>
+            {leads.map((lead, i) => (
+              <div key={lead.id} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 0.75fr 1fr 1fr', padding: '14px 16px', fontSize: '12px', borderBottom: i < leads.length - 1 ? '1px solid #0d1117' : 'none', background: i % 2 === 0 ? '#080b0f' : '#0a0e13', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, color: '#f0f4f8' }}>{lead.name}</span>
+                <span style={{ color: '#6b7a8d' }}>{lead.phone || '—'}</span>
+                <span style={{ color: '#6b7a8d', textAlign: 'center' }}>{lead.party_size ?? '—'}</span>
+                <span style={{ color: '#6b7a8d' }}>{lead.date || '—'}</span>
+                <select
+                  value={lead.status}
+                  onChange={e => updateStatus(lead.id, e.target.value)}
+                  style={{ background: '#0f1419', border: `1px solid ${statusColor(lead.status)}`, color: statusColor(lead.status), padding: '4px 8px', fontSize: '10px', fontFamily: 'monospace', cursor: 'pointer' }}
+                >
+                  <option value="pending">PENDING</option>
+                  <option value="confirmed">CONFIRMED</option>
+                  <option value="completed">COMPLETED</option>
+                  <option value="cancelled">CANCELLED</option>
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
